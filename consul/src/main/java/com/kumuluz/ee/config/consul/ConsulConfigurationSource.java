@@ -2,6 +2,7 @@ package com.kumuluz.ee.config.consul;
 
 import com.kumuluz.ee.configuration.ConfigurationSource;
 import com.kumuluz.ee.configuration.utils.ConfigurationDispatcher;
+import com.kumuluz.ee.configuration.utils.ConfigurationUtil;
 import com.orbitz.consul.Consul;
 import com.orbitz.consul.ConsulException;
 import com.orbitz.consul.KeyValueClient;
@@ -31,9 +32,15 @@ public class ConsulConfigurationSource implements ConfigurationSource {
     private Consul consul;
     private KeyValueClient kvClient;
 
+    private int retryDelay;
+
 
     @Override
     public void init(ConfigurationDispatcher configurationDispatcher) {
+
+        ConfigurationUtil configurationUtil = ConfigurationUtil.getInstance();
+
+        this.retryDelay = configurationUtil.getInteger("kumuluzee.config.consul.retry-delay-ms").orElse(1000);
 
         this.configurationDispatcher = configurationDispatcher;
 
@@ -170,7 +177,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             public void onFailure(Throwable throwable) {
                 if(throwable instanceof ConnectException) {
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(retryDelay);
                     } catch (InterruptedException ignored) {
                     }
                 } else {
