@@ -27,6 +27,8 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
     private static final Logger log = Logger.getLogger(ConsulConfigurationSource.class.getName());
 
+    private static final int CONSUL_WATCH_WAIT_SECONDS = 120;
+
     private ConfigurationDispatcher configurationDispatcher;
 
     private Consul consul;
@@ -63,7 +65,10 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
         this.configurationDispatcher = configurationDispatcher;
 
-        consul = Consul.builder().withPing(false).build();
+        consul = Consul.builder()
+                .withPing(false)
+                .withReadTimeoutMillis(CONSUL_WATCH_WAIT_SECONDS*1000 + (CONSUL_WATCH_WAIT_SECONDS*1000) / 16 + 1000)
+                .build();
 
         try {
             consul.agentClient().ping();
@@ -196,8 +201,8 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             }
 
             void watch() {
-                kvClient.getValue(parseKeyNameForConsul(fullKey), QueryOptions.blockSeconds(9, index.get()).build(),
-                        this);
+                kvClient.getValue(parseKeyNameForConsul(fullKey),
+                        QueryOptions.blockSeconds(CONSUL_WATCH_WAIT_SECONDS, index.get()).build(),this);
             }
 
             @Override
@@ -221,8 +226,8 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             }
         };
 
-        kvClient.getValue(parseKeyNameForConsul(fullKey), QueryOptions.blockSeconds(9, new BigInteger("0")).build(),
-                callback);
+        kvClient.getValue(parseKeyNameForConsul(fullKey),
+                QueryOptions.blockSeconds(CONSUL_WATCH_WAIT_SECONDS, new BigInteger("0")).build(), callback);
 
     }
 
