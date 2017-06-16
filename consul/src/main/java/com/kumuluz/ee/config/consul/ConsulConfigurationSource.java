@@ -32,6 +32,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
     private Consul consul;
     private KeyValueClient kvClient;
 
+    private String namespace;
     private int retryDelay;
 
 
@@ -39,6 +40,18 @@ public class ConsulConfigurationSource implements ConfigurationSource {
     public void init(ConfigurationDispatcher configurationDispatcher) {
 
         ConfigurationUtil configurationUtil = ConfigurationUtil.getInstance();
+
+        String env = configurationUtil.get("kumuluzee.env").orElse(null);
+        if (env != null && !env.isEmpty()) {
+            this.namespace = "environments." + env + ".services";
+        } else {
+            this.namespace = "environments.dev.services";
+        }
+
+        String consulNamespace = configurationUtil.get("kumuluzee.config.consul.namespace").orElse(null);
+        if (consulNamespace != null && !consulNamespace.isEmpty()) {
+            this.namespace = consulNamespace;
+        }
 
         this.retryDelay = configurationUtil.getInteger("kumuluzee.config.consul.retry-delay-ms").orElse(1000);
 
@@ -59,6 +72,8 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
     @Override
     public Optional<String> get(@Nonnull String key) {
+
+        key = this.namespace + "." + key;
 
         Optional<String> value = Optional.empty();
 
@@ -138,7 +153,9 @@ public class ConsulConfigurationSource implements ConfigurationSource {
     @Override
     public void watch(String key) {
 
-        log.info("Initializing watcher for key: " + parseKeyNameForConsul(key));
+        String fullKey = this.namespace + "." + key;
+
+        log.info("Initializing watcher for key: " + parseKeyNameForConsul(fullKey));
 
         ConsulResponseCallback<com.google.common.base.Optional<Value>> callback = new ConsulResponseCallback<com
                 .google.common.base.Optional<Value>>() {
@@ -156,7 +173,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
                     if(valueOpt.isPresent() && configurationDispatcher != null && index.get() != null &&
                             !index.get().equals(consulResponse.getIndex())) {
-                        log.info("Consul watcher callback for key " + parseKeyNameForConsul(key) + " invoked. " +
+                        log.info("Consul watcher callback for key " + parseKeyNameForConsul(fullKey) + " invoked. " +
                                 "New value: " + valueOpt.get());
                         configurationDispatcher.notifyChange(key, valueOpt.get());
                     }
@@ -169,7 +186,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             }
 
             void watch() {
-                kvClient.getValue(parseKeyNameForConsul(key), QueryOptions.blockSeconds(9, index.get()).build(),
+                kvClient.getValue(parseKeyNameForConsul(fullKey), QueryOptions.blockSeconds(9, index.get()).build(),
                         this);
             }
 
@@ -188,7 +205,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             }
         };
 
-        kvClient.getValue(parseKeyNameForConsul(key), QueryOptions.blockSeconds(9, new BigInteger("0")).build(),
+        kvClient.getValue(parseKeyNameForConsul(fullKey), QueryOptions.blockSeconds(9, new BigInteger("0")).build(),
                 callback);
 
     }
