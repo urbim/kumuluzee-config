@@ -128,11 +128,13 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
                     Value v = consulResponse.getResponse().get();
 
-                    log.info("Consul watcher callback for key " + parseKeyNameForConsul(key) + "invoked. New value: "
-                            + v.getValueAsString().get());
+                    com.google.common.base.Optional<String> valueOpt = v.getValueAsString();
 
-                    if(v.getValueAsString().isPresent() && configurationDispatcher != null) {
-                        configurationDispatcher.notifyChange(key, v.getValueAsString().get());
+                    if(valueOpt.isPresent() && configurationDispatcher != null && index.get() != null &&
+                            !index.get().equals(consulResponse.getIndex())) {
+                        log.info("Consul watcher callback for key " + parseKeyNameForConsul(key) + " invoked. " +
+                                "New value: " + valueOpt.get());
+                        configurationDispatcher.notifyChange(key, valueOpt.get());
                     }
 
                 }
