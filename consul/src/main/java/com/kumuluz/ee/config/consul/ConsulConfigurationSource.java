@@ -33,7 +33,9 @@ public class ConsulConfigurationSource implements ConfigurationSource {
     private KeyValueClient kvClient;
 
     private String namespace;
-    private int retryDelay;
+
+    private int startRetryDelay;
+    private int maxRetryDelay;
 
 
     @Override
@@ -53,7 +55,11 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             this.namespace = consulNamespace;
         }
 
-        this.retryDelay = configurationUtil.getInteger("kumuluzee.config.consul.retry-delay-ms").orElse(1000);
+        // get retry delays
+        startRetryDelay = configurationUtil.getInteger("kumuluzee.config.consul.start-retry-delay-ms")
+                .orElse(500);
+        maxRetryDelay = configurationUtil.getInteger("kumuluzee.config.consul.max-retry-delay-ms")
+                .orElse(900000);
 
         this.configurationDispatcher = configurationDispatcher;
 
@@ -162,8 +168,12 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
             AtomicReference<BigInteger> index = new AtomicReference<>(new BigInteger("0"));
 
+            int currentRetryDelay = startRetryDelay;
+
             @Override
             public void onComplete(ConsulResponse<com.google.common.base.Optional<Value>> consulResponse) {
+                // successful request, reset delay
+                currentRetryDelay = startRetryDelay;
 
                 if (consulResponse.getResponse().isPresent()) {
 
@@ -194,8 +204,14 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             public void onFailure(Throwable throwable) {
                 if(throwable instanceof ConnectException) {
                     try {
-                        Thread.sleep(retryDelay);
+                        Thread.sleep(currentRetryDelay);
                     } catch (InterruptedException ignored) {
+                    }
+
+                    // exponential increase, limited by maxRetryDelay
+                    currentRetryDelay *= 2;
+                    if(currentRetryDelay > maxRetryDelay) {
+                        currentRetryDelay = maxRetryDelay;
                     }
                 } else {
                     log.severe("Watch error: " + throwable.getLocalizedMessage());
