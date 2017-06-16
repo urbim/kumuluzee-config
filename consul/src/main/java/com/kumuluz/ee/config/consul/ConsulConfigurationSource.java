@@ -3,6 +3,7 @@ package com.kumuluz.ee.config.consul;
 import com.kumuluz.ee.configuration.ConfigurationSource;
 import com.kumuluz.ee.configuration.utils.ConfigurationDispatcher;
 import com.orbitz.consul.Consul;
+import com.orbitz.consul.ConsulException;
 import com.orbitz.consul.KeyValueClient;
 import com.orbitz.consul.async.ConsulResponseCallback;
 import com.orbitz.consul.model.ConsulResponse;
@@ -11,6 +12,7 @@ import com.orbitz.consul.option.QueryOptions;
 
 import javax.annotation.Nonnull;
 import java.math.BigInteger;
+import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
@@ -35,7 +37,14 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
         this.configurationDispatcher = configurationDispatcher;
 
-        consul = Consul.builder().build();
+        consul = Consul.builder().withPing(false).build();
+
+        try {
+            consul.agentClient().ping();
+        } catch (ConsulException e) {
+            log.severe("Cannot ping consul agent: " + e.getLocalizedMessage());
+        }
+
         kvClient = consul.keyValueClient();
 
         log.info("Consul configuration source successfully initialised.");
@@ -44,8 +53,16 @@ public class ConsulConfigurationSource implements ConfigurationSource {
     @Override
     public Optional<String> get(@Nonnull String key) {
 
-        return kvClient.getValueAsString(parseKeyNameForConsul(key)).transform(java.util.Optional::of).or(java.util
-                .Optional.empty());
+        Optional<String> value = Optional.empty();
+
+        try {
+            value = kvClient.getValueAsString(parseKeyNameForConsul(key)).transform(java.util.Optional::of).or(java.util
+                    .Optional.empty());
+        } catch (ConsulException e) {
+            log.severe("Consul exception: " + e.getLocalizedMessage());
+        }
+
+        return value;
 
     }
 
@@ -119,7 +136,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
         ConsulResponseCallback<com.google.common.base.Optional<Value>> callback = new ConsulResponseCallback<com
                 .google.common.base.Optional<Value>>() {
 
-            AtomicReference<BigInteger> index = new AtomicReference<>(null);
+            AtomicReference<BigInteger> index = new AtomicReference<>(new BigInteger("0"));
 
             @Override
             public void onComplete(ConsulResponse<com.google.common.base.Optional<Value>> consulResponse) {
@@ -151,6 +168,15 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
             @Override
             public void onFailure(Throwable throwable) {
+                if(throwable instanceof ConnectException) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ignored) {
+                    }
+                } else {
+                    log.severe("Watch error: " + throwable.getLocalizedMessage());
+                }
+
                 watch();
             }
         };
