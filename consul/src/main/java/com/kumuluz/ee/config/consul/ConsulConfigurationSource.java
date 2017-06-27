@@ -1,5 +1,6 @@
 package com.kumuluz.ee.config.consul;
 
+import com.kumuluz.ee.config.utils.InitializationUtils;
 import com.kumuluz.ee.configuration.ConfigurationSource;
 import com.kumuluz.ee.configuration.utils.ConfigurationDispatcher;
 import com.kumuluz.ee.configuration.utils.ConfigurationUtil;
@@ -45,23 +46,11 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
         ConfigurationUtil configurationUtil = ConfigurationUtil.getInstance();
 
-        String env = configurationUtil.get("kumuluzee.env").orElse(null);
-        if (env != null && !env.isEmpty()) {
-            this.namespace = "environments." + env + ".services";
-        } else {
-            this.namespace = "environments.dev.services";
-        }
-
-        String consulNamespace = configurationUtil.get("kumuluzee.config.consul.namespace").orElse(null);
-        if (consulNamespace != null && !consulNamespace.isEmpty()) {
-            this.namespace = consulNamespace;
-        }
+        this.namespace = InitializationUtils.getNamespace(configurationUtil, "consul");
 
         // get retry delays
-        startRetryDelay = configurationUtil.getInteger("kumuluzee.config.consul.start-retry-delay-ms")
-                .orElse(500);
-        maxRetryDelay = configurationUtil.getInteger("kumuluzee.config.consul.max-retry-delay-ms")
-                .orElse(900000);
+        startRetryDelay = InitializationUtils.getStartRetryDelayMs(configurationUtil, "consul");
+        maxRetryDelay = InitializationUtils.getMaxRetryDelayMs(configurationUtil, "consul");
 
         this.configurationDispatcher = configurationDispatcher;
 

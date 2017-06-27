@@ -21,6 +21,7 @@
 
 package com.kumuluz.ee.config.etcd;
 
+import com.kumuluz.ee.config.utils.InitializationUtils;
 import com.kumuluz.ee.configuration.ConfigurationSource;
 import com.kumuluz.ee.configuration.utils.ConfigurationDispatcher;
 import com.kumuluz.ee.configuration.utils.ConfigurationUtil;
@@ -68,19 +69,9 @@ public class Etcd2ConfigurationSource implements ConfigurationSource {
 
         this.configurationDispatcher = configurationDispatcher;
 
-        // get namespace
         ConfigurationUtil configurationUtil = ConfigurationUtil.getInstance();
-        String env = configurationUtil.get("kumuluzee.env").orElse(null);
-        if (env != null && !env.isEmpty()) {
-            this.namespace = "environments." + env + ".services";
-        } else {
-            this.namespace = "environments.dev.services";
-        }
-
-        String etcdNamespace = configurationUtil.get("kumuluzee.config.etcd.namespace").orElse(null);
-        if (etcdNamespace != null && !etcdNamespace.isEmpty()) {
-            this.namespace = etcdNamespace;
-        }
+        // get namespace
+        this.namespace = InitializationUtils.getNamespace(configurationUtil, "etcd");
 
         // get user credentials
         String etcdUsername = configurationUtil.get("kumuluzee.config.etcd.username").orElse(null);
@@ -149,10 +140,8 @@ public class Etcd2ConfigurationSource implements ConfigurationSource {
             etcd.setRetryHandler(new RetryOnce(0));
 
             // get retry dellays
-            startRetryDelay = configurationUtil.getInteger("kumuluzee.config.etcd.start-retry-delay-ms")
-                    .orElse(500);
-            maxRetryDelay = configurationUtil.getInteger("kumuluzee.config.etcd.max-retry-delay-ms")
-                    .orElse(900000);
+            startRetryDelay = InitializationUtils.getStartRetryDelayMs(configurationUtil, "etcd");
+            maxRetryDelay = InitializationUtils.getMaxRetryDelayMs(configurationUtil, "etcd");
 
             log.info("etcd2 configuration source successfully initialised.");
 
