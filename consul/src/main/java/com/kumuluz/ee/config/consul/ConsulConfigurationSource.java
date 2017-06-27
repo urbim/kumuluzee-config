@@ -119,7 +119,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
         String fullKey = this.namespace + "." + key;
 
-        log.info("Initializing watcher for key: " + parseKeyNameForConsul(fullKey));
+        log.info("Initializing watch for key: " + parseKeyNameForConsul(fullKey));
 
         ConsulResponseCallback<com.google.common.base.Optional<Value>> callback = new ConsulResponseCallback<com
                 .google.common.base.Optional<Value>>() {
@@ -141,7 +141,7 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
                     if(valueOpt.isPresent() && configurationDispatcher != null && index.get() != null &&
                             !index.get().equals(consulResponse.getIndex())) {
-                        log.info("Consul watcher callback for key " + parseKeyNameForConsul(fullKey) + " invoked. " +
+                        log.info("Consul watch callback for key " + parseKeyNameForConsul(fullKey) + " invoked. " +
                                 "New value: " + valueOpt.get());
                         configurationDispatcher.notifyChange(key, valueOpt.get());
                     }
