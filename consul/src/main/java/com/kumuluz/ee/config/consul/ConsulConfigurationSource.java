@@ -147,25 +147,37 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             AtomicReference<BigInteger> index = new AtomicReference<>(new BigInteger("0"));
 
             int currentRetryDelay = startRetryDelay;
+            boolean previouslyDeleted = false;
 
             @Override
             public void onComplete(ConsulResponse<com.google.common.base.Optional<Value>> consulResponse) {
                 // successful request, reset delay
                 currentRetryDelay = startRetryDelay;
 
-                if (consulResponse.getResponse().isPresent()) {
+                if(index.get() != null && !index.get().equals(consulResponse.getIndex())) {
+                    if (consulResponse.getResponse().isPresent()) {
 
-                    Value v = consulResponse.getResponse().get();
+                        Value v = consulResponse.getResponse().get();
 
-                    com.google.common.base.Optional<String> valueOpt = v.getValueAsString();
+                        com.google.common.base.Optional<String> valueOpt = v.getValueAsString();
 
-                    if(valueOpt.isPresent() && configurationDispatcher != null && index.get() != null &&
-                            !index.get().equals(consulResponse.getIndex())) {
-                        log.info("Consul watch callback for key " + parseKeyNameForConsul(fullKey) + " invoked. " +
-                                "New value: " + valueOpt.get());
-                        configurationDispatcher.notifyChange(key, valueOpt.get());
+                        if (valueOpt.isPresent() && configurationDispatcher != null) {
+                            log.info("Consul watch callback for key " + parseKeyNameForConsul(fullKey) +
+                                    " invoked. " + "New value: " + valueOpt.get());
+                            configurationDispatcher.notifyChange(key, valueOpt.get());
+                            previouslyDeleted = false;
+                        }
+
+                    } else if(!previouslyDeleted) {
+                        log.info("Consul watch callback for key " + parseKeyNameForConsul(fullKey) +
+                                " invoked. No value present, fallback to other configuration sources.");
+                        ConfigurationUtil configurationUtil = ConfigurationUtil.getInstance();
+                        String fallbackConfig = configurationUtil.get(key).orElse(null);
+                        if(fallbackConfig != null) {
+                            configurationDispatcher.notifyChange(key, fallbackConfig);
+                        }
+                        previouslyDeleted = true;
                     }
-
                 }
 
                 index.set(consulResponse.getIndex());
