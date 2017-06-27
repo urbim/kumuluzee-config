@@ -49,6 +49,9 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
     private static final Logger log = Logger.getLogger(ConsulConfigurationSource.class.getName());
 
+    // Specifies wait parameter, passed to Consul when initializing watches.
+    // Consul ends connection (sends current state), when wait time is reached.
+    // After that, the watch is reestablished.
     private static final int CONSUL_WATCH_WAIT_SECONDS = 120;
 
     private ConfigurationDispatcher configurationDispatcher;
@@ -75,6 +78,9 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
         this.configurationDispatcher = configurationDispatcher;
 
+        // withReadTimeoutMillis: Sets read timeout on underlying library (okhttp).
+        // timeout is calculated by using Consul formula for maximum waiting time with added time (1s) for connection
+        // delays. For formula and more details, see: https://www.consul.io/api/index.html#blocking-queries
         consul = Consul.builder()
                 .withPing(false)
                 .withReadTimeoutMillis(CONSUL_WATCH_WAIT_SECONDS*1000 + (CONSUL_WATCH_WAIT_SECONDS*1000) / 16 + 1000)
