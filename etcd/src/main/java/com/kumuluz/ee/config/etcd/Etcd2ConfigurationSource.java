@@ -22,6 +22,7 @@
 package com.kumuluz.ee.config.etcd;
 
 import com.kumuluz.ee.config.utils.InitializationUtils;
+import com.kumuluz.ee.config.utils.ParseUtils;
 import com.kumuluz.ee.configuration.ConfigurationSource;
 import com.kumuluz.ee.configuration.utils.ConfigurationDispatcher;
 import com.kumuluz.ee.configuration.utils.ConfigurationUtil;
@@ -185,59 +186,22 @@ public class Etcd2ConfigurationSource implements ConfigurationSource {
 
     @Override
     public Optional<Boolean> getBoolean(String key) {
-
-        Optional<String> value = get(key);
-
-        return value.map(Boolean::valueOf);
+        return ParseUtils.parseOptionalStringToOptionalBoolean(get(key));
     }
 
     @Override
     public Optional<Integer> getInteger(String key) {
-
-        Optional<String> value = get(key);
-
-        if (value.isPresent()) {
-            try {
-                return Optional.of(Integer.valueOf(value.get()));
-            } catch (NumberFormatException e) {
-                return Optional.empty();
-            }
-        } else {
-            return Optional.empty();
-        }
+        return ParseUtils.parseOptionalStringToOptionalInteger(get(key));
     }
 
     @Override
     public Optional<Double> getDouble(String key) {
-
-        Optional<String> value = get(key);
-
-        if (value.isPresent()) {
-            try {
-                return Optional.of(Double.valueOf(value.get()));
-            } catch (NumberFormatException e) {
-                return Optional.empty();
-            }
-        } else {
-            return Optional.empty();
-        }
+        return ParseUtils.parseOptionalStringToOptionalDouble(get(key));
     }
 
     @Override
     public Optional<Float> getFloat(String key) {
-
-        Optional<String> value = get(key);
-
-        if (value.isPresent()) {
-            try {
-                return Optional.of(Float.valueOf(value.get()));
-            } catch (NumberFormatException e) {
-                return Optional.empty();
-            }
-
-        } else {
-            return Optional.empty();
-        }
+        return ParseUtils.parseOptionalStringToOptionalFloat(get(key));
     }
 
 

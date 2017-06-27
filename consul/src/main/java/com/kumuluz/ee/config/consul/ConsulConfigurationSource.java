@@ -1,6 +1,7 @@
 package com.kumuluz.ee.config.consul;
 
 import com.kumuluz.ee.config.utils.InitializationUtils;
+import com.kumuluz.ee.config.utils.ParseUtils;
 import com.kumuluz.ee.configuration.ConfigurationSource;
 import com.kumuluz.ee.configuration.utils.ConfigurationDispatcher;
 import com.kumuluz.ee.configuration.utils.ConfigurationUtil;
@@ -90,59 +91,22 @@ public class ConsulConfigurationSource implements ConfigurationSource {
 
     @Override
     public Optional<Boolean> getBoolean(@Nonnull String key) {
-
-        Optional<String> value = get(key);
-
-        return value.map(Boolean::valueOf);
+        return ParseUtils.parseOptionalStringToOptionalBoolean(get(key));
     }
 
     @Override
     public Optional<Integer> getInteger(@Nonnull String key) {
-
-        Optional<String> value = get(key);
-
-        if (value.isPresent()) {
-            try {
-                return Optional.of(Integer.valueOf(value.get()));
-            } catch (NumberFormatException e) {
-                return Optional.empty();
-            }
-        } else {
-            return Optional.empty();
-        }
+        return ParseUtils.parseOptionalStringToOptionalInteger(get(key));
     }
 
     @Override
     public Optional<Double> getDouble(@Nonnull String key) {
-
-        Optional<String> value = get(key);
-
-        if (value.isPresent()) {
-            try {
-                return Optional.of(Double.valueOf(value.get()));
-            } catch (NumberFormatException e) {
-                return Optional.empty();
-            }
-        } else {
-            return Optional.empty();
-        }
+        return ParseUtils.parseOptionalStringToOptionalDouble(get(key));
     }
 
     @Override
     public Optional<Float> getFloat(@Nonnull String key) {
-
-        Optional<String> value = get(key);
-
-        if (value.isPresent()) {
-            try {
-                return Optional.of(Float.valueOf(value.get()));
-            } catch (NumberFormatException e) {
-                return Optional.empty();
-            }
-
-        } else {
-            return Optional.empty();
-        }
+        return ParseUtils.parseOptionalStringToOptionalFloat(get(key));
     }
 
     @Override
