@@ -237,8 +237,16 @@ public class Etcd2ConfigurationSource implements ConfigurationSource {
                             String value = response.node.value;
                             log.info("Value changed. Key: " + fullKey + " New value: " + value);
 
-                            if (configurationDispatcher != null && value != null) {
-                                configurationDispatcher.notifyChange(key, value);
+                            if (configurationDispatcher != null) {
+                                if(value != null) {
+                                    configurationDispatcher.notifyChange(key, value);
+                                } else {
+                                    ConfigurationUtil  configurationUtil = ConfigurationUtil.getInstance();
+                                    String fallbackConfig = configurationUtil.get(key).orElse(null);
+                                    if(fallbackConfig != null) {
+                                        configurationDispatcher.notifyChange(key, fallbackConfig);
+                                    }
+                                }
                             }
                         }
 

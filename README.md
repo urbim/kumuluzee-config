@@ -157,6 +157,9 @@ ConfigurationUtil.getInstance().subscribe(watchedKey, (String key, String value)
 });
 ```
 
+If the key is not present in configuration server, a value from other configuration sources is returned. Similarly, if
+the key is deleted from configuration server, a value from other configuration sources is returned.
+
 **Retry delays**
 
 Etcd and Consul implementations support retry delays on watch connection errors. Since they use increasing exponential

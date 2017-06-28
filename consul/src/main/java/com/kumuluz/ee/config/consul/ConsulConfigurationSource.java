@@ -153,6 +153,9 @@ public class ConsulConfigurationSource implements ConfigurationSource {
             AtomicReference<BigInteger> index = new AtomicReference<>(new BigInteger("0"));
 
             int currentRetryDelay = startRetryDelay;
+
+            // If value we're watching is not present in Consul, onComplete fires on every change in KV store.
+            // This is used, so we only notify once, if key was deleted.
             boolean previouslyDeleted = false;
 
             @Override
