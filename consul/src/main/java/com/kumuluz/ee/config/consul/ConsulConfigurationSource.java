@@ -86,15 +86,22 @@ public class ConsulConfigurationSource implements ConfigurationSource {
                 .withReadTimeoutMillis(CONSUL_WATCH_WAIT_SECONDS*1000 + (CONSUL_WATCH_WAIT_SECONDS*1000) / 16 + 1000)
                 .build();
 
+        boolean pingSuccessful = false;
         try {
             consul.agentClient().ping();
+            pingSuccessful = true;
         } catch (ConsulException e) {
-            log.severe("Cannot ping consul agent: " + e.getLocalizedMessage());
+            log.severe("Cannot ping Consul agent: " + e.getLocalizedMessage());
         }
 
         kvClient = consul.keyValueClient();
 
-        log.info("Consul configuration source successfully initialised.");
+        if(pingSuccessful) {
+            log.info("Consul configuration source successfully initialised.");
+        } else {
+            log.warning("Consul configuration source initialized, but Consul agent inaccessible. " +
+                    "Configuration source may not work as expected.");
+        }
     }
 
     @Override
